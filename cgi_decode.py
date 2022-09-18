@@ -1,6 +1,7 @@
 import sys
-import unittest
 import operator
+from typing import Dict, Tuple
+from random import seed, randint
 
 def cgi_decode(s):
     """Decode the CGI-encoded string 's':
@@ -35,45 +36,14 @@ def cgi_decode(s):
         i += 1
     return t
 
-class test_cgi_decode(unittest.TestCase):
-    def test_identity(self):
-        s1 = "abcd"
-
-        s2 = cgi_decode(s1)
-
-        self.assertEqual(s1, s2)
-
-
-    def test_plus(self):
-        s1 = "a+b"
-
-        s2 = cgi_decode(s1)
-        
-        self.assertEqual(s2, "a b")
-
-    def test_hex(self):
-        s1 = "%AE"
-
-        s2 = cgi_decode(s1)
-
-        self.assertEqual(s2, '®')
-
-    def test_raise_error_empty_hex(self):
-        with self.assertRaises(IndexError):
-            cgi_decode("%")
-
-    def test_raise_error_invalid_low_byte_of_hex(self):
-        with self.assertRaises(ValueError):
-            cgi_decode("%AT")
-    
-    def test_raise_error_invalid_high_byte_of_hex(self):
-        with self.assertRaises(ValueError):
-            cgi_decode("%TA")
-
-
-from typing import Dict
 distances_true: Dict[int, int] = {}
 distances_false: Dict[int, int] = {}
+
+def get_distances_true(): 
+    return distances_true
+
+def get_distances_false(): 
+    return distances_false
 
 def update_maps(condition_num, d_true, d_false):
     global distances_true, distances_false
@@ -90,7 +60,7 @@ def update_maps(condition_num, d_true, d_false):
 
 # Checkear si es string y si lo es aplicar ord() para comparar enteros
 def evaluate_condition(condition_num, op, lhs, rhs):
-    if (type(rhs) is list): 
+    if (type(rhs) is list or type(rhs) is dict): 
         if (lhs in rhs):
             update_maps(condition_num, 0, 1)
             return True
@@ -99,7 +69,12 @@ def evaluate_condition(condition_num, op, lhs, rhs):
         else:
             distance = sys.maxsize
             for e in rhs:
-               distance = min(distance, max(e - lhs, lhs - e))
+                l = lhs
+                r = e
+                if (type(lhs) is str):
+                    l = ord(lhs)
+                    r = ord(e)
+                distance = min(distance, max(r - l, l - r))
             update_maps(condition_num, distance, 0)
         return False
     else:
@@ -123,155 +98,19 @@ def clear_tests():
     global distances_true, distances_false
     distances_true = {}
     distances_false = {}
-
-# TODO(agregar test con strings)
-class test_evaluate_condition(unittest.TestCase):  
-    def test_equal_operator_not_equal_values(self):
-        clear_tests()
-        lhs = 20
-        rhs = 10
-
-        v = evaluate_condition(1, operator.eq, lhs, rhs)
-    
-        self.assertFalse(v)
-        self.assertEqual(distances_true[1], 10)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_equal_operator_equal_values(self):
-        clear_tests()
-        lhs = 20
-
-        v = evaluate_condition(1, operator.eq, lhs, lhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 1)
-
-    def test_not_equal_operator_equal_values(self):
-        clear_tests()
-        lhs = 20
-
-        v = evaluate_condition(1, operator.ne, lhs, lhs)
-    
-        self.assertFalse(v)
-        self.assertEqual(distances_true[1], 1)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_not_equal_operator_equal_values(self):
-        clear_tests()
-        lhs = 20
-        rhs = 10
-
-        v = evaluate_condition(1, operator.ne, lhs, rhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 10)
-
-    def test_leq_equal_operator_lhs_less_than(self):
-        clear_tests()
-        lhs = 10
-        rhs = 20
-
-        v = evaluate_condition(1, operator.le, lhs, rhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 11)
-
-    def test_leq_equal_operator_rhs_less_than(self):
-        clear_tests()
-        lhs = 20
-        rhs = 10
-
-        v = evaluate_condition(1, operator.le, lhs, rhs)
-    
-        self.assertFalse(v)
-        self.assertEqual(distances_true[1], 10)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_leq_equal_operator_lhs_equal_rhs(self):
-        clear_tests()
-        lhs = 20
-        rhs = 20
-
-        v = evaluate_condition(1, operator.le, lhs, rhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 1)
-
-    def test_less_than_operator_lhs_less_than_rhs(self):
-        clear_tests()
-        lhs = 10
-        rhs = 20
-
-        v = evaluate_condition(1, operator.lt, lhs, rhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 10)
-
-    def test_less_than_operator_rhs_less_than_lhs(self):
-        clear_tests()
-        lhs = 20
-        rhs = 10
-
-        v = evaluate_condition(1, operator.lt, lhs, rhs)
-    
-        self.assertFalse(v)
-        self.assertEqual(distances_true[1], 11)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_in_operator_lhs_in_list(self):
-        clear_tests()
-        lhs = 10
-        rhs = [20, 30, 10]
-
-        v = evaluate_condition(1, "in", lhs, rhs)
-    
-        self.assertTrue(v)
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_false[1], 1)
-
-    def test_in_operator_empty_list(self):
-        clear_tests()
-        lhs = 10
-        rhs = []
-
-        v = evaluate_condition(1, "in", lhs, rhs)
-    
-        self.assertFalse(False)
-        self.assertEqual(distances_true[1], sys.maxsize)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_in_operator_not_in_list(self):
-        clear_tests()
-        lhs = 10
-        rhs = [1, 2, 3]
-
-        v = evaluate_condition(1, "in", lhs, rhs)
-    
-        self.assertFalse(False)
-        self.assertEqual(distances_true[1], 7)
-        self.assertEqual(distances_false[1], 0)
-
-    def test_in_operator_not_in_list(self):
-        clear_tests()
-        lhs = 10
-        rhs = [1, 2, 3, 9]
-
-        v = evaluate_condition(1, "in", lhs, rhs)
-    
-        self.assertFalse(False)
-        self.assertEqual(distances_true[1], 1)
-        self.assertEqual(distances_false[1], 0)
+    return (distances_true, distances_false)
         
 def cgi_decode_instrumented(s):
     """Decode the CGI-encoded string 's':
        * replace "+" by " "
        * replace "%xx" by the character with hex number xx.
        Return the decoded string. Raise `ValueError` for invalid inputs. """
+    
+    global distances_true, distances_false 
+    distances_true = { 1: sys.maxsize, 2: sys.maxsize, 3: sys.maxsize, 
+                       4: sys.maxsize, 5: sys.maxsize }
+    distances_false = { 1: sys.maxsize, 2: sys.maxsize, 3: sys.maxsize, 
+                       4: sys.maxsize, 5: sys.maxsize }
 
     # Mapping of hex digits to their integer values
     hex_values = { 
@@ -294,28 +133,47 @@ def cgi_decode_instrumented(s):
                 evaluate_condition(5, "in", digit_low, hex_values)): #C4 and C5
                 v = hex_values[digit_high] * 16 + hex_values[digit_low]
                 t += chr(v)
-            else: 
-                raise ValueError("Invalid encoding")
         else:
             t += c
         i += 1
     return t
 
-class test_cgi_decode_instrumente(unittest.TestCase):  
-    def test_decode_hello_reader(self):
-        clear_tests()
-        s = "Hello+Reader"
+def normalize(v: int) -> int:
+    return v / (v + 1)
 
-        s2 = cgi_decode_instrumented(s)
+def get_fitness_cgi_decode(input_string: str) -> float:
+    global distances_true, distances_false
+    cgi_decode_instrumented(input_string)
+
+    return (normalize(distances_true[1])  + 
+            normalize(distances_false[2]) + 
+            normalize(distances_true[3])  +
+            normalize(distances_true[4])  +
+            normalize(distances_true[5]))
+
+def create_population(population_size: int, _seed: int) -> list:
+    population = []
+    seed(_seed)
+    for i in range(population_size):
+        population.append(randint(0, 255))
+
+    return population
+
+
+# Debo limpiar las distancias? 
+def evaluate_population(population: list) -> Dict[int, int]:
+    evaluated_population: Dict[int, int] = {}
+
+    for p in population:
+        v = get_fitness_cgi_decode(p)
+        evaluated_population[p] = v
     
-        self.assertEqual(s2, "Hello Reader")
-        self.assertEqual(distances_true[1], 0)
-        self.assertEqual(distances_true[2], 0)
-        self.assertEqual(distances_true[3], 35)
-        self.assertEqual(distances_false[2], 0)
-        self.assertEqual(distances_false[3], 0)
-        self.assertEqual(distances_false[3], 0)
+    return evaluated_population
 
-
-if __name__ == '__main__':
-    unittest.main()
+def crossover(p1: str, p2: str) -> Tuple[str, str, int]:
+    point = randint(0, len(p1))
+    
+    of1 = p1[0: point] + p2[point:]
+    of2 = p2[0: point] + p1[point:]
+        
+    return (of1, of2, point)

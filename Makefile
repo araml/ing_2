@@ -8,7 +8,7 @@ help:
 	@echo "  genetic-rep  	corre 10 iteraciones del algoritmo genetico con semillas fijas"
 
 tests:
-	@echo "Tests"
+	${PYTHON} -m unittest
 
 genetic:
 	@echo "Genetico"
