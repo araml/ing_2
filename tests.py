@@ -218,11 +218,19 @@ class test_get_fitness_cgi_decode(unittest.TestCase):
 
     def test_get_fitness_cgi_decode3(self):
         clear_tests()
-        
-        print("\n", get_fitness_cgi_decode("%AA"))
-        print(get_distances_true(), "\n", 
-              get_distances_false())
-        
+ 
+        v = get_fitness_cgi_decode("%AU")
+
+        self.assertEqual(v, 0.9230769230769231)
+
+
+    def test_get_fitness_cgi_decode5(self):
+        clear_tests()
+ 
+        v = get_fitness_cgi_decode("%UU")
+
+        self.assertEqual(v, 1.9230769230769231)
+
 
     def test_get_fitness_cgi_decode2(self):
         clear_tests()
@@ -267,8 +275,6 @@ class test_crossover(unittest.TestCase):
 
         of1, of2, p = crossover(p1, p2)
         
-        print(p, of1, of2)
-
         self.assertEqual(len(of1), len(p1))
         self.assertEqual(len(of2), len(p2))
         self.assertEqual(of1[0:p], p1[0:p])
